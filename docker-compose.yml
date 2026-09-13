@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  database:
+    image: postgres:15-alpine
+    container_name: jalrakshak-db
+    environment:
+      POSTGRES_USER: jalrakshak
+      POSTGRES_PASSWORD: bihar_emergency_secure_password_2026
+      POSTGRES_DB: jalrakshak_bihar
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jalrakshak -d jalrakshak_bihar"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: jalrakshak-backend
+    environment:
+      - DATABASE_URL=postgresql://jalrakshak:bihar_emergency_secure_password_2026@database:5432/jalrakshak_bihar
+      - SECRET_KEY=jalrakshak_bihar_production_secret_key_2026
+      - ENVIRONMENT=production
+    ports:
+      - "8002:8002"
+    depends_on:
+      database:
+        condition: service_healthy
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002"]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: jalrakshak-frontend
+    ports:
+      - "5174:5173"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
